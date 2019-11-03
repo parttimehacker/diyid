@@ -21,7 +21,6 @@ import diyoled128x64e
 ```
 sudo pip3 install paho-mqtt
 sudo pip3 install psutil
-sudo apt install python3-gpiozero
 ```
 
 ## Useful utilities:
@@ -31,8 +30,8 @@ sudo apt -y install screen
 ```
 
 ## Setting up systemctl service
-
-- It is a good idea to run diyi.py as a system service at boot time
+It is a good idea to run diyis.py as a system service at boot time. The setup bash script will move the systemctl files to
+the /lib/systemd/system folder; enable the service and create three useful aliases: start, stop and status.
 - Edit the diystatus.service file and enter your user directory 
 - Enter the following commands to install the service
 ```

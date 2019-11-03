@@ -1,0 +1,8 @@
+[Unit]
+Description=Diyhas Id
+After=multi-user.target
+[Service]
+Type=idle
+ExecStart=/usr/bin/python3 /home/an/diyid/diyid.py 
+[Install]
+WantedBy=multi-user.target

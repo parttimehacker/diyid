@@ -1,6 +1,7 @@
 #/usr/bin/bash
 #
-# create aliases
+# import required python libraries
+
 echo "Install Mqtt and psutil"
 sudo pip3 install paho-mqtt
 sudo pip3 install psutil
@@ -14,4 +15,3 @@ git clone https://github.com/adafruit/Adafruit_Python_SSD1306.git
 cd Adafruit_Python_SSD1306
 sudo python3 setup.py install
 cd ..
-

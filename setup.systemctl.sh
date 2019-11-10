@@ -9,5 +9,6 @@ sudo systemctl enable $1.service
 echo "setting up aliases for $1"
 echo "alias $1.start='sudo systemctl start $1'" >> /home/an/.bash_aliases 
 echo "alias $1.stop='sudo systemctl stop $1'" >> /home/an/.bash_aliases 
-echo "alias $1.status='sudo systemctl -l status $1'" >> /home/an/.bash_aliases 
+echo "alias $1.status='sudo systemctl -l status $1'" >> /home/an/.bash_aliases
+cd /home/an
 source /home/an/.bashrc

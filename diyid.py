@@ -27,13 +27,40 @@
 import time
 import datetime
 import socket
+import logging
+import logging.config
+
 import psutil
 import paho.mqtt.client as mqtt
 import diyoled128x64
 
 OLED = diyoled128x64.DiyOLED128x64()
 
-DEBUG = True
+logging.config.fileConfig(fname='/home/an/diyid/logging.ini', disable_existing_loggers=False)
+
+# Get the logger specified in the file
+LOGGER = logging.getLogger("diyid")
+
+LOGGER.info('Application started')
+
+class MqttTopicConfiguration:
+    """ motion_topic to avoid global PEP8 """
+
+    def __init__(self):
+        """ create two topics for this application """
+        self.setup_topic = "diyhas/" + socket.gethostname() + "/setup"
+        self.location_topic = ""
+    def set(self, topic):
+        """ the motion topic is passed to the app at startup """
+        self.location_topic = topic
+    def get_setup(self,):
+        """ the motion topic dynamically set """
+        return self.setup_topic
+    def get_location(self,):
+        """ the motion topic dynamically set """
+        return self.location_topic
+
+LOCATION_TOPIC = MqttTopicConfiguration()
 
 class Configuration():
     ''' Set up constants and unique server ID stuff '''
@@ -45,36 +72,37 @@ class Configuration():
         self.host = socket.gethostname()+" "
         self.ip_address = sock.getsockname()[0]+" "
         sock.close()
-        self.boot_time = datetime.datetime.fromtimestamp(psutil.boot_time())
-        self.running_since = self.boot_time.strftime("%m/%d %H:%M:%S")
+        self.location = "Default"
         self.mqtt_address = "192.168.1.17"
-        self.application = "diyclock"
-
-    def print_configuration(self,):
-        ''' print stuff to overcome plint issue '''
-        print("host=", self.host)
-        print("ip=", self.ip_address)
+        self.application = "diysensor"
 
     def set_application(self, application):
         ''' set the application name '''
         self.application = application
-        if DEBUG:
-            print("application changed= ", application)
 
+    def set_location(self, location):
+        ''' set the application name '''
+        self.location = location
 
 CONFIG = Configuration()
 
 def system_message(msg):
     ''' process system messages'''
+    LOGGER.info(msg.topic+" "+msg.payload.decode('utf-8'))
     if msg.topic == 'diyhas/system/who':
         if msg.payload == b'ON':
             OLED.set(0, CONFIG.host)
             OLED.set(1, CONFIG.ip_address)
             OLED.set(2, CONFIG.application)
-            OLED.set(3, CONFIG.running_since)
+            OLED.set(3, CONFIG.location)
             OLED.show()
         else:
             OLED.clear()
+    elif msg.topic == LOCATION_TOPIC.get_setup():
+        LOGGER.info("set: " + msg.topic+" "+msg.payload.decode('utf-8'))
+        topic = msg.payload.decode('utf-8')
+        LOCATION_TOPIC.set(topic)
+        CONFIG.set_location(topic)
 
 # use a dispatch model for the subscriptions
 TOPIC_DISPATCH_DICTIONARY = {
@@ -83,6 +111,8 @@ TOPIC_DISPATCH_DICTIONARY = {
     "diyhas/system/panic":
         {"method":system_message},
     "diyhas/system/who":
+        {"method":system_message},
+    LOCATION_TOPIC.get_setup():
         {"method":system_message}
     }
 
@@ -92,22 +122,17 @@ def on_connect(client, userdata, flags, rcdata):
     client.subscribe("diyhas/system/fire", 1)
     client.subscribe("diyhas/system/panic", 1)
     client.subscribe("diyhas/system/who", 1)
-    if DEBUG:
-        print(userdata, flags, rcdata)
+    client.subscribe(LOCATION_TOPIC.get_setup(), 1)
 
 def on_disconnect(client, userdata, rcdata):
     ''' disconnect message from MQTT broker '''
     client.connected_flag = False
     client.disconnect_flag = True
-    if DEBUG:
-        print(client, userdata, rcdata)
 
 # The callback for when a PUBLISH message is received from the server
 def on_message(client, userdata, msg):
     """ dispatch to the appropriate MQTT topic handler """
     TOPIC_DISPATCH_DICTIONARY[msg.topic]["method"](msg)
-    if DEBUG:
-        print(client, userdata)
 
 if __name__ == '__main__':
 

@@ -24,14 +24,15 @@
 # SOFTWARE.
 #
 
+import Adafruit_GPIO.SPI as SPI
+import Adafruit_SSD1306
+
 from PIL import Image
-from PIL import ImageFont
 from PIL import ImageDraw
+from PIL import ImageFont
 
 # pylint: disable=bad-whitespace
 # pylint: disable=too-many-public-methods
-
-import Adafruit_SSD1306
 
 FONT = "/home/an/diyid/Tahoma.ttf"
 FONT_SIZE = 13

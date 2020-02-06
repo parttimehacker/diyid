@@ -35,6 +35,7 @@ import paho.mqtt.client as mqtt
 import diyoled128x64
 
 OLED = diyoled128x64.DiyOLED128x64()
+OLED.clear()
 
 logging.config.fileConfig(fname='/home/an/diyid/logging.ini', disable_existing_loggers=False)
 
@@ -48,7 +49,7 @@ class MqttTopicConfiguration:
 
     def __init__(self):
         """ create two topics for this application """
-        self.setup_topic = "diyhas/" + socket.gethostname() + "/setup"
+        self.setup_topic = "diy/" + socket.gethostname() + "/setup"
         self.location_topic = ""
     def set(self, topic):
         """ the motion topic is passed to the app at startup """
@@ -73,7 +74,7 @@ class Configuration():
         self.ip_address = sock.getsockname()[0]+" "
         sock.close()
         self.location = "Default"
-        self.mqtt_address = "192.168.1.17"
+        self.mqtt_address = "192.168.1.53"
         self.application = "diysensor"
 
     def set_application(self, application):
@@ -89,8 +90,9 @@ CONFIG = Configuration()
 def system_message(msg):
     ''' process system messages'''
     LOGGER.info(msg.topic+" "+msg.payload.decode('utf-8'))
-    if msg.topic == 'diyhas/system/who':
+    if msg.topic == 'diy/system/who':
         if msg.payload == b'ON':
+            OLED.clear()
             OLED.set(0, CONFIG.host)
             OLED.set(1, CONFIG.ip_address)
             OLED.set(2, CONFIG.application)
@@ -106,11 +108,11 @@ def system_message(msg):
 
 # use a dispatch model for the subscriptions
 TOPIC_DISPATCH_DICTIONARY = {
-    "diyhas/system/fire":
+    "diy/system/fire":
         {"method":system_message},
-    "diyhas/system/panic":
+    "diy/system/panic":
         {"method":system_message},
-    "diyhas/system/who":
+    "diy/system/who":
         {"method":system_message},
     LOCATION_TOPIC.get_setup():
         {"method":system_message}
@@ -119,9 +121,9 @@ TOPIC_DISPATCH_DICTIONARY = {
 # The callback for when the client receives a CONNACK response from the server
 def on_connect(client, userdata, flags, rcdata):
     ''' if we lose the connection & reconnect, subscriptions will be renewed '''
-    client.subscribe("diyhas/system/fire", 1)
-    client.subscribe("diyhas/system/panic", 1)
-    client.subscribe("diyhas/system/who", 1)
+    client.subscribe("diy/system/fire", 1)
+    client.subscribe("diy/system/panic", 1)
+    client.subscribe("diy/system/who", 1)
     client.subscribe(LOCATION_TOPIC.get_setup(), 1)
 
 def on_disconnect(client, userdata, rcdata):
@@ -140,7 +142,7 @@ if __name__ == '__main__':
     CLIENT.on_connect = on_connect
     CLIENT.on_disconnect = on_disconnect
     CLIENT.on_message = on_message
-    CLIENT.connect("192.168.1.17", 1883, 60)
+    CLIENT.connect("192.168.1.53", 1883, 60)
     CLIENT.loop_start()
 
     # give network time to startup - hack?

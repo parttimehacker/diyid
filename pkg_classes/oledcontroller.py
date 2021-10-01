@@ -34,14 +34,14 @@ from PIL import ImageFont
 # pylint: disable=bad-whitespace
 # pylint: disable=too-many-public-methods
 
-FONT = "/home/an/diyid/Tahoma.ttf"
+FONT = "/usr/local/diyid/pkg_classes/Tahoma.ttf"
 FONT_SIZE = 13
 
-class DiyOLED128x64:
+class OLEDController:
     """ OLED display 128 by 64 """
 
     def __init__(self,):
-        """ Initialize the VCNL40xx sensor """
+        """ Initialize the OLED device """
         self.disp = Adafruit_SSD1306.SSD1306_128_64(rst=24)
         self.disp.begin()
         self.disp.clear()

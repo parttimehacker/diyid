@@ -30,80 +30,104 @@ import socket
 import logging
 import logging.config
 
-import psutil
+# imported third party classes
+
 import paho.mqtt.client as mqtt
-import diyoled128x64
+import psutil
 
-OLED = diyoled128x64.DiyOLED128x64()
-OLED.clear()
+# imported application classes
 
-logging.config.fileConfig(fname='/home/an/diyid/logging.ini', disable_existing_loggers=False)
+from pkg_classes.oledcontroller import OLEDController
 
-# Get the logger specified in the file
-LOGGER = logging.getLogger("diyid")
+# standard DIYHA classes
 
+from pkg_classes.testmodel import TestModel
+from pkg_classes.topicmodel import TopicModel
+from pkg_classes.whocontroller import WhoController
+from pkg_classes.configmodel import ConfigModel
+from pkg_classes.statusmodel import StatusModel
+
+# Start logging and enable imported classes to log appropriately.
+
+LOGGING_FILE = '/usr/local/diyid/logging.ini'
+logging.config.fileConfig( fname=LOGGING_FILE, disable_existing_loggers=False )
+LOGGER = logging.getLogger(__name__)
 LOGGER.info('Application started')
 
-class MqttTopicConfiguration:
-    """ motion_topic to avoid global PEP8 """
+# get the command line arguments
 
-    def __init__(self):
-        """ create two topics for this application """
-        self.setup_topic = "diy/" + socket.gethostname() + "/setup"
-        self.location_topic = ""
-    def set(self, topic):
-        """ the motion topic is passed to the app at startup """
-        self.location_topic = topic
-    def get_setup(self,):
-        """ the motion topic dynamically set """
-        return self.setup_topic
-    def get_location(self,):
-        """ the motion topic dynamically set """
-        return self.location_topic
+CONFIG = ConfigModel(LOGGING_FILE)
 
-LOCATION_TOPIC = MqttTopicConfiguration()
+# Location is used to create the switch topics
 
-class Configuration():
+TOPIC = TopicModel()  # Location MQTT topic
+TOPIC.set(CONFIG.get_location())
+
+# Set up who message handler from MQTT broker and wait for client.
+
+WHO = WhoController(LOGGING_FILE)
+
+# process diy/system/test development messages
+
+TEST = TestModel(LOGGING_FILE)
+
+# Initialize devices
+
+OLED = OLEDController() # Seven segment LED backpack from Adafruit
+OLED.clear()
+
+
+class Host_Information():
     ''' Set up constants and unique server ID stuff '''
     def __init__(self, ):
         ''' server system status monitor thread with MQTT reporting '''
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         #connect to any target website
         sock.connect(('google.com', 0))
-        self.host = socket.gethostname()+" "
+        self.host_name = socket.gethostname()+" "
         self.ip_address = sock.getsockname()[0]+" "
         sock.close()
-        self.location = "Default"
-        self.mqtt_address = "192.168.1.53"
-        self.application = "sensor"
 
-    def set_application(self, application):
-        ''' set the application name '''
-        self.application = application
 
-    def set_location(self, location):
-        ''' set the application name '''
-        self.location = location
-
-CONFIG = Configuration()
+HOST = Host_Information()
 
 def system_message(msg):
     ''' process system messages'''
 
     if msg.topic == 'diy/system/who':
         if msg.payload == b'ON':
+        	WHO.turn_on()
             OLED.clear()
-            OLED.set(0, CONFIG.host)
-            OLED.set(1, CONFIG.ip_address)
+            OLED.set(0, HOST.host_name)
+            OLED.set(1, HOST.ip_address)
             OLED.set(2, CONFIG.application)
             OLED.set(3, CONFIG.location)
             OLED.show()
         else:
+        	WHO.turn_off()
             OLED.clear()
-    elif msg.topic == LOCATION_TOPIC.get_setup():
-        topic = msg.payload.decode('utf-8')
-        LOCATION_TOPIC.set(topic)
-        CONFIG.set_location(topic)
+    elif msg.topic == 'diy/system/fire':
+        if msg.payload == b'ON':
+            OLED.clear()
+            OLED.set(0, HOST.host_name)
+            OLED.set(1, "FIRE FIRE FIRE)
+			now = datetime.datetime.now()
+            OLED.set(2, now.strftime("%Y-%m-%d %H:%M:%S"))
+            OLED.set(3, CONFIG.location)
+            OLED.show()
+        else:
+            OLED.clear()
+	elif msg.topic == 'diy/system/panic':
+        if msg.payload == b'ON':
+            OLED.clear()
+            OLED.set(0, HOST.host_name)
+            OLED.set(1, "PANIC PANIC PANIC)
+			now = datetime.datetime.now()
+            OLED.set(2, now.strftime("%Y-%m-%d %H:%M:%S"))
+            OLED.set(3, CONFIG.location)
+            OLED.show()
+        else:
+            OLED.clear()
 
 # use a dispatch model for the subscriptions
 TOPIC_DISPATCH_DICTIONARY = {
@@ -113,8 +137,6 @@ TOPIC_DISPATCH_DICTIONARY = {
         {"method":system_message},
     "diy/system/who":
         {"method":system_message},
-    LOCATION_TOPIC.get_setup():
-        {"method":system_message}
     }
 
 # The callback for when the client receives a CONNACK response from the server
@@ -123,7 +145,6 @@ def on_connect(client, userdata, flags, rcdata):
     client.subscribe("diy/system/fire", 1)
     client.subscribe("diy/system/panic", 1)
     client.subscribe("diy/system/who", 1)
-    client.subscribe(LOCATION_TOPIC.get_setup(), 1)
 
 def on_disconnect(client, userdata, rcdata):
     ''' disconnect message from MQTT broker '''
@@ -137,15 +158,30 @@ def on_message(client, userdata, msg):
 
 if __name__ == '__main__':
 
+    # Setup MQTT handlers then wait for timed events or messages
+
     CLIENT = mqtt.Client()
     CLIENT.on_connect = on_connect
     CLIENT.on_disconnect = on_disconnect
     CLIENT.on_message = on_message
-    CLIENT.connect("chuck.local", 1883, 60)
-    CLIENT.loop_start()
 
-    # give network time to startup - hack?
-    time.sleep(1.0)
+   # initilze the Who client for publishing.
+
+    WHO.set_client(CLIENT)
+
+    # command line argument for the switch mode - motion activated is the default
+
+    CLIENT.connect(CONFIG.get_broker(), 1883, 60)
+    CLIENT.loop_start()
+    
+    # let MQTT stuff initialize
+
+    time.sleep(2) 
+
+    # initialize status monitoring
+
+    STATUS = StatusModel(CLIENT)
+    STATUS.start()
 
     # loop forever checking for interrupts or timed events
 

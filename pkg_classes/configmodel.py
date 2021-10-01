@@ -40,6 +40,7 @@ class ConfigModel:
         PARSER = argparse.ArgumentParser('Command Line Parser')
         PARSER.add_argument('--mqtt', help='MQTT server IP address')
         PARSER.add_argument('--location', help='Location topic required')
+        PARSER.add_argument('--apps', help='App topic required')
         ARGS = PARSER.parse_args()
         # command line arguement for the MQTT broker hostname or IP
         if ARGS.mqtt == None:
@@ -51,6 +52,11 @@ class ConfigModel:
             self.logger.error("Terminating> --location not provided")
             exit() # mandatory
         self.location = ARGS.location
+        # command line arguement for the application topic
+        if ARGS.apps == None:
+            self.logger.error("Terminating> --apps not provided")
+            exit() # mandatory
+        self.apps = ARGS.apps
 
     def get_broker(self, ):
         """ MQTT BORKER hostname or IP address."""
@@ -59,4 +65,8 @@ class ConfigModel:
     def get_location(self, ):
         """ MQTT location topic for the device. """
         return self.location
+    
+    def get_apps(self, ):
+        """ MQTT location topic for the device. """
+        return self.apps
 

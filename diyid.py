@@ -75,7 +75,7 @@ class Configuration():
         sock.close()
         self.location = "Default"
         self.mqtt_address = "192.168.1.53"
-        self.application = "diysensor"
+        self.application = "sensor"
 
     def set_application(self, application):
         ''' set the application name '''
@@ -89,10 +89,7 @@ CONFIG = Configuration()
 
 def system_message(msg):
     ''' process system messages'''
-<<<<<<< HEAD
-    LOGGER.info(msg.topic+" "+msg.payload.decode('utf-8'))
-=======
->>>>>>> 4e54f1fba2a88bcf8468986b0893c776cabff545
+
     if msg.topic == 'diy/system/who':
         if msg.payload == b'ON':
             OLED.clear()
@@ -144,7 +141,7 @@ if __name__ == '__main__':
     CLIENT.on_connect = on_connect
     CLIENT.on_disconnect = on_disconnect
     CLIENT.on_message = on_message
-    CLIENT.connect("192.168.1.53", 1883, 60)
+    CLIENT.connect("chuck.local", 1883, 60)
     CLIENT.loop_start()
 
     # give network time to startup - hack?

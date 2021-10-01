@@ -3,7 +3,7 @@ Do It Yourself Raspberry Pi server identification application in Python3 using c
 - Host name
 - IP address
 - Main application name
-- Last boot date and time
+- Location topic string
 
 ## Requires:
 ```

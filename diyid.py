@@ -96,33 +96,33 @@ def system_message(msg):
 
     if msg.topic == 'diy/system/who':
         if msg.payload == b'ON':
-        	WHO.turn_on()
+            WHO.turn_on()
             OLED.clear()
             OLED.set(0, HOST.host_name)
             OLED.set(1, HOST.ip_address)
-            OLED.set(2, CONFIG.application)
+            OLED.set(2, CONFIG.apps)
             OLED.set(3, CONFIG.location)
             OLED.show()
         else:
-        	WHO.turn_off()
+            WHO.turn_off()
             OLED.clear()
     elif msg.topic == 'diy/system/fire':
         if msg.payload == b'ON':
             OLED.clear()
             OLED.set(0, HOST.host_name)
-            OLED.set(1, "FIRE FIRE FIRE)
-			now = datetime.datetime.now()
+            OLED.set(1, "FIRE FIRE FIRE")
+            now = datetime.datetime.now()
             OLED.set(2, now.strftime("%Y-%m-%d %H:%M:%S"))
             OLED.set(3, CONFIG.location)
             OLED.show()
         else:
             OLED.clear()
-	elif msg.topic == 'diy/system/panic':
+    elif msg.topic == 'diy/system/panic':
         if msg.payload == b'ON':
             OLED.clear()
             OLED.set(0, HOST.host_name)
-            OLED.set(1, "PANIC PANIC PANIC)
-			now = datetime.datetime.now()
+            OLED.set(1, "PANIC PANIC PANIC")
+            now = datetime.datetime.now()
             OLED.set(2, now.strftime("%Y-%m-%d %H:%M:%S"))
             OLED.set(3, CONFIG.location)
             OLED.show()
